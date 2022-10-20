@@ -1,8 +1,10 @@
 const express = require('express')
-const { MongoClient } = require('mongodb');const app = express()
+const { MongoClient } = require('mongodb');
+const app = express();
 const cors = require('cors');
 require('dotenv').config();
 const ObjectId=require("mongodb").ObjectId;
+
 const port = process.env.PORT || 5000;
 
 
@@ -18,7 +20,7 @@ async function run(){
         await client.connect();
         const ReviewCollection = client.db ("Jewelery").collection("PersonReview");
         const ProductCollection= client.db("Jewelery").collection("Products");
-        const ordersCollection = client.db('Jewelery').collection('orders');
+        const OrdersCollection = client.db('Jewelery').collection("orders");
         const usersCollection = client.db('Jewelery').collection('users');
        
 
@@ -39,10 +41,12 @@ async function run(){
           res.json(result);
         })
 
-        app.get('/review',async (req,res) => {
+        app.get('/review', async (req,res) => {
           const review =await ReviewCollection.find({}).toArray();
           res.json(review)
         })
+
+       
 
         app.post('/addProduct', (req,res) => {
            ProductCollection.insertOne(req.body).then((result) => res.send(result.insertedId))
@@ -54,16 +58,39 @@ async function run(){
           res.json(result);
       })
 
+      
+
         app.post('/review',(req,res) => {
           ReviewCollection.insertOne(req.body).then((result) => res.send(result.insertedId))
         })
-
-        app.post('/orders', async (req, res) => {
-          const orders = req.body;
-          const result = await ordersCollection.insertOne(orders);
+    // order collection
+        app.post('/orders', async(req, res) => {
+          const order = req.body;
+          const result = await OrdersCollection.insertOne(order);
           res.json(result);
+          
       });
+      // to get all orders
+      app.get('/orders', async (req, res) => {
+        const cursor = OrdersCollection.find({});
+        const allOrders = await cursor.toArray();
+        res.send(allOrders);
+        
+    })
+       
+      
+      // ordercollection get for every email user
 
+      // myOrders 
+      app.get('/myOrders', async (req, res) => {
+        const email = req.query.email;
+        const query = { email: email };
+        const cursor = OrdersCollection.find(query);
+        const myOrders = await cursor.toArray();
+        res.json(myOrders);
+    });
+
+    
         app.get('/manageproducts',async (req,res) =>{
           const result =await ProductCollection.find({}).toArray();
           res.json(result)
@@ -73,7 +100,7 @@ async function run(){
           console.log(req.params.id);
 
           const result =await ProductCollection.deleteOne({_id:ObjectId(req.params.id)})
-          res.send(result);
+          res.send(result); 
         })
 
         app.put('/users/admin', async(req, res)=>{
